@@ -2,4 +2,4 @@
 
 cd "$(dirname "${0}")/../"
 
-gm mogrify -crop 1280x800+1280 *.png
+gm mogrify -crop 1280x800+1660 *.png
