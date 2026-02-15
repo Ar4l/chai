@@ -9,14 +9,9 @@ TOP_LEVEL="$(cd "$HERE/../" && pwd)"
 cd "$TOP_LEVEL"
 
 # Build
-if [ -x "$(which xcpretty)" ]; then
-    xcodebuild | xcpretty
-else
-    xcodebuild
-fi
+./script/build
 
 # Deploy
 rm -rf deploy
 mkdir -p deploy
-( cd build/Release && zip -r "${TOP_LEVEL}/deploy/Chai.zip" Chai.app )
-
+( cd .build/release && zip -r "${TOP_LEVEL}/deploy/Chai.zip" Chai.app )

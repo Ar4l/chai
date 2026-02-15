@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+IFS=$'\n\t'
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+TOP_LEVEL="$(cd "$HERE/../" && pwd)"
+
+cd "$TOP_LEVEL"
+
+BUILD_DIR=".build/release"
+APP_BUNDLE="${BUILD_DIR}/Chai.app"
+
+# Build
+swift build -c release
+
+# Assemble .app bundle
+rm -rf "$APP_BUNDLE"
+mkdir -p "${APP_BUNDLE}/Contents/MacOS" "${APP_BUNDLE}/Contents/Resources"
+cp Bundle/Info.plist "${APP_BUNDLE}/Contents/"
+cp "${BUILD_DIR}/Chai" "${APP_BUNDLE}/Contents/MacOS/"
+
+# Compile asset catalog
+xcrun actool \
+    --compile "${APP_BUNDLE}/Contents/Resources" \
+    --platform macosx \
+    --minimum-deployment-target 14.0 \
+    --app-icon AppIcon \
+    --output-partial-info-plist /dev/null \
+    "${BUILD_DIR}/Chai_Chai.bundle/Assets.xcassets"
+
+# Codesign
+codesign --sign - --entitlements Bundle/Chai.entitlements --force "$APP_BUNDLE"
