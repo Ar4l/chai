@@ -15,9 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import ServiceManagement
 import SwiftUI
+import os
 
 @main
 struct ChaiApp: App {
@@ -143,18 +143,22 @@ struct MenuBarMenu: View {
     Divider()
 
     Menu("Preferences") {
-      Toggle("Disable After Suspend", isOn: Binding(
-        get: { appState.isDisableAfterSuspendEnabled },
-        set: { _ in toggleDisableAfterSuspend() }
-      ))
+      Toggle(
+        "Disable After Suspend",
+        isOn: Binding(
+          get: { appState.isDisableAfterSuspendEnabled },
+          set: { _ in toggleDisableAfterSuspend() }
+        ))
     }
 
     Divider()
 
-    Toggle("Launch at Login", isOn: Binding(
-      get: { appState.isLoginItemEnabled },
-      set: { _ in toggleLaunchAtLogin() }
-    ))
+    Toggle(
+      "Launch at Login",
+      isOn: Binding(
+        get: { appState.isLoginItemEnabled },
+        set: { _ in toggleLaunchAtLogin() }
+      ))
 
     Button("Quit Chai") {
       NSApplication.shared.terminate(nil)

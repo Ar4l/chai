@@ -32,7 +32,8 @@ final class AppState {
   var isLoginItemEnabled: Bool = false
 
   init() {
-    isDisableAfterSuspendEnabled = UserDefaults.standard.bool(forKey: DefaultsKey.disableAfterSuspend)
+    isDisableAfterSuspendEnabled = UserDefaults.standard.bool(
+      forKey: DefaultsKey.disableAfterSuspend)
     isLoginItemEnabled = UserDefaults.standard.bool(forKey: DefaultsKey.loginItemEnabled)
   }
 
