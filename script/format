@@ -1,7 +1,11 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-set -eu
+set -Eeuo pipefail
+IFS=$'\n\t'
 
-cd "$(dirname "${0}")/../"
+HERE="$(cd "$(dirname "$0")" && pwd)"
+TOP_LEVEL="$(cd "$HERE/../" && pwd)"
+
+cd "$TOP_LEVEL"
 
 git ls-files -z '*.swift' | xargs -0 swift-format format -i

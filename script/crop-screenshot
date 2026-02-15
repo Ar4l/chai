@@ -1,5 +1,11 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-cd "$(dirname "${0}")/../"
+set -Eeuo pipefail
+IFS=$'\n\t'
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+TOP_LEVEL="$(cd "$HERE/../" && pwd)"
+
+cd "$TOP_LEVEL"
 
 gm mogrify -crop 1280x800+1660 *.png
