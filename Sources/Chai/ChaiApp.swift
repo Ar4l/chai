@@ -22,8 +22,6 @@ import os
 @main
 struct ChaiApp: App {
   @State private var appState = AppState()
-  @State private var powerAssertion: PowerAssertion?
-  @State private var deactivationTask: Task<Void, Never>?
 
   private let didWakePublisher = NSWorkspace.shared.notificationCenter
     .publisher(for: NSWorkspace.didWakeNotification)
@@ -60,11 +58,11 @@ struct ChaiApp: App {
     // Deactivate any existing assertion first
     deactivate()
 
-    powerAssertion = PowerAssertion(named: "Brewing Tea")
+    appState.powerAssertion = PowerAssertion(named: "Brewing Tea")
 
     if spec.timeInterval > 0 {
       os_log("Scheduling deactivation in %f seconds", spec.timeInterval)
-      deactivationTask = Task { @MainActor in
+      appState.deactivationTask = Task { @MainActor in
         try? await Task.sleep(for: .seconds(spec.timeInterval))
         guard !Task.isCancelled else { return }
         os_log("Timer fired, deactivating")
@@ -77,9 +75,9 @@ struct ChaiApp: App {
   }
 
   private func deactivate() {
-    powerAssertion = nil
-    deactivationTask?.cancel()
-    deactivationTask = nil
+    appState.powerAssertion = nil
+    appState.deactivationTask?.cancel()
+    appState.deactivationTask = nil
     appState.deactivate()
     os_log("Deactivated")
   }

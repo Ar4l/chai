@@ -30,6 +30,8 @@ final class AppState {
   var activeSpec: ActivationSpec? = nil
   var isDisableAfterSuspendEnabled: Bool = false
   var isLoginItemEnabled: Bool = false
+  var powerAssertion: PowerAssertion? = nil
+  var deactivationTask: Task<Void, Never>? = nil
 
   init() {
     isDisableAfterSuspendEnabled = UserDefaults.standard.bool(
