@@ -11,6 +11,15 @@ _Don't let your Mac fall asleep, like a sir_
 This is a fork of [lvillani/chai](https://github.com/lvillani/chai) that adds two preferences:
 keeping the Mac awake with the lid closed, and pausing on battery power.
 
+## Install
+
+```bash
+brew install ar4l/tap/chai
+```
+
+The cask removes the quarantine attribute on install, so Gatekeeper won't complain about the
+app not being notarized. To build from source instead, see [Installation](#installation) below.
+
 ## What's Different in This Fork
 
 ### Keep Awake When Lid Is Closed
@@ -63,7 +72,13 @@ bar icon shows the empty mug and the menu reads "Paused While on Battery".
 
 ## Installation
 
-Build from source (requires the Xcode command line tools):
+The easiest way is Homebrew (see [Install](#install) above):
+
+```bash
+brew install ar4l/tap/chai
+```
+
+Or build from source (requires the Xcode command line tools):
 
 ```bash
 ./script/build
