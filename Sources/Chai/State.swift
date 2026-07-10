@@ -24,19 +24,28 @@ final class AppState {
   private enum DefaultsKey {
     static let disableAfterSuspend = "DisableAfterSuspend"
     static let loginItemEnabled = "LoginItemEnabled"
+    static let lidClosedMode = "LidClosedMode"
+    static let keepAwakeOnBattery = "KeepAwakeOnBattery"
   }
 
   var isActive: Bool = false
   var activeSpec: ActivationSpec? = nil
   var isDisableAfterSuspendEnabled: Bool = false
   var isLoginItemEnabled: Bool = false
+  var isLidClosedModeEnabled: Bool = false
+  var isKeepAwakeOnBatteryEnabled: Bool = true
+  var isSuspendedForBattery: Bool = false
   var powerAssertion: PowerAssertion? = nil
   var deactivationTask: Task<Void, Never>? = nil
+  let sleepDisabler = SleepDisabler()
 
   init() {
     isDisableAfterSuspendEnabled = UserDefaults.standard.bool(
       forKey: DefaultsKey.disableAfterSuspend)
     isLoginItemEnabled = UserDefaults.standard.bool(forKey: DefaultsKey.loginItemEnabled)
+    isLidClosedModeEnabled = UserDefaults.standard.bool(forKey: DefaultsKey.lidClosedMode)
+    isKeepAwakeOnBatteryEnabled =
+      UserDefaults.standard.object(forKey: DefaultsKey.keepAwakeOnBattery) as? Bool ?? true
   }
 
   func activate(spec: ActivationSpec?) {
@@ -47,6 +56,7 @@ final class AppState {
   func deactivate() {
     isActive = false
     activeSpec = nil
+    isSuspendedForBattery = false
   }
 
   func setDisableAfterSuspend(_ enabled: Bool) {
@@ -57,5 +67,15 @@ final class AppState {
   func setLoginItemEnabled(_ enabled: Bool) {
     UserDefaults.standard.set(enabled, forKey: DefaultsKey.loginItemEnabled)
     isLoginItemEnabled = enabled
+  }
+
+  func setLidClosedMode(_ enabled: Bool) {
+    UserDefaults.standard.set(enabled, forKey: DefaultsKey.lidClosedMode)
+    isLidClosedModeEnabled = enabled
+  }
+
+  func setKeepAwakeOnBattery(_ enabled: Bool) {
+    UserDefaults.standard.set(enabled, forKey: DefaultsKey.keepAwakeOnBattery)
+    isKeepAwakeOnBatteryEnabled = enabled
   }
 }

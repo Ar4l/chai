@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- "Keep Awake When Lid Is Closed" preference: keeps the Mac awake in clamshell mode via
+  `pmset disablesleep` (requires administrator privileges).
+- "Keep Awake on Battery" preference (on by default): when disabled, Chai pauses while on
+  battery power and resumes automatically on AC.
+
 ### Changed
 
 - Migrated from Xcode project to Swift Package Manager.
@@ -15,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- The application no longer runs in the App Sandbox (incompatible with the privileged
+  `pmset` call needed for lid-closed mode).
 - Removed ChaiHelper (login item helper), which is no longer necessary.
 - Removed Brewfile.
 

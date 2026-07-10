@@ -26,6 +26,13 @@ struct ChaiApp: App {
   private let didWakePublisher = NSWorkspace.shared.notificationCenter
     .publisher(for: NSWorkspace.didWakeNotification)
 
+  private let powerSourcePublisher = NotificationCenter.default
+    .publisher(for: .powerSourceChanged)
+
+  init() {
+    PowerSource.startMonitoring()
+  }
+
   var body: some Scene {
     MenuBarExtra {
       MenuBarMenu(
@@ -33,6 +40,8 @@ struct ChaiApp: App {
         activate: activate,
         deactivate: deactivate,
         toggleDisableAfterSuspend: toggleDisableAfterSuspend,
+        toggleLidClosedMode: toggleLidClosedMode,
+        toggleKeepAwakeOnBattery: toggleKeepAwakeOnBattery,
         toggleLaunchAtLogin: toggleLaunchAtLogin
       )
       .onReceive(didWakePublisher) { _ in
@@ -40,8 +49,12 @@ struct ChaiApp: App {
         os_log("System wakeup detected, disabling according to config")
         deactivate()
       }
+      .onReceive(powerSourcePublisher) { _ in
+        os_log("Power source changed, re-applying policy")
+        applyPowerPolicy()
+      }
     } label: {
-      Image(appState.isActive ? "Mug" : "Mug-Empty")
+      Image(appState.isActive && !appState.isSuspendedForBattery ? "Mug" : "Mug-Empty")
         .renderingMode(.template)
     }
   }
@@ -58,8 +71,6 @@ struct ChaiApp: App {
     // Deactivate any existing assertion first
     deactivate()
 
-    appState.powerAssertion = PowerAssertion(named: "Brewing Tea")
-
     if spec.timeInterval > 0 {
       os_log("Scheduling deactivation in %f seconds", spec.timeInterval)
       appState.deactivationTask = Task { @MainActor in
@@ -71,19 +82,57 @@ struct ChaiApp: App {
     }
 
     appState.activate(spec: spec)
+    applyPowerPolicy()
     os_log("Activated")
   }
 
   private func deactivate() {
-    appState.powerAssertion = nil
     appState.deactivationTask?.cancel()
     appState.deactivationTask = nil
     appState.deactivate()
+    applyPowerPolicy()
     os_log("Deactivated")
+  }
+
+  // Reconciles the power assertion and the lid-closed sleep override with the
+  // activation state, preferences, and current power source.
+  private func applyPowerPolicy() {
+    let shouldHold =
+      appState.isActive && (appState.isKeepAwakeOnBatteryEnabled || PowerSource.isOnAC)
+    appState.isSuspendedForBattery = appState.isActive && !shouldHold
+
+    guard shouldHold else {
+      appState.powerAssertion = nil
+      appState.sleepDisabler.disengage()
+      return
+    }
+
+    if appState.powerAssertion == nil {
+      appState.powerAssertion = PowerAssertion(named: "Brewing Tea")
+    }
+
+    if appState.isLidClosedModeEnabled {
+      if !appState.sleepDisabler.engage() {
+        os_log("Could not override lid-closed sleep, disabling the preference")
+        appState.setLidClosedMode(false)
+      }
+    } else {
+      appState.sleepDisabler.disengage()
+    }
   }
 
   private func toggleDisableAfterSuspend() {
     appState.setDisableAfterSuspend(!appState.isDisableAfterSuspendEnabled)
+  }
+
+  private func toggleLidClosedMode() {
+    appState.setLidClosedMode(!appState.isLidClosedModeEnabled)
+    applyPowerPolicy()
+  }
+
+  private func toggleKeepAwakeOnBattery() {
+    appState.setKeepAwakeOnBattery(!appState.isKeepAwakeOnBatteryEnabled)
+    applyPowerPolicy()
   }
 
   private func toggleLaunchAtLogin() {
@@ -112,11 +161,17 @@ struct MenuBarMenu: View {
   let activate: (ActivationSpec) -> Void
   let deactivate: () -> Void
   let toggleDisableAfterSuspend: () -> Void
+  let toggleLidClosedMode: () -> Void
+  let toggleKeepAwakeOnBattery: () -> Void
   let toggleLaunchAtLogin: () -> Void
 
   var body: some View {
     Text("Keep This Mac Awake")
       .font(.headline)
+
+    if appState.isSuspendedForBattery {
+      Text("Paused While on Battery")
+    }
 
     Divider()
 
@@ -147,6 +202,20 @@ struct MenuBarMenu: View {
           get: { appState.isDisableAfterSuspendEnabled },
           set: { _ in toggleDisableAfterSuspend() }
         ))
+
+      Toggle(
+        "Keep Awake When Lid Is Closed",
+        isOn: Binding(
+          get: { appState.isLidClosedModeEnabled },
+          set: { _ in toggleLidClosedMode() }
+        ))
+
+      Toggle(
+        "Keep Awake on Battery",
+        isOn: Binding(
+          get: { appState.isKeepAwakeOnBatteryEnabled },
+          set: { _ in toggleKeepAwakeOnBattery() }
+        ))
     }
 
     Divider()
@@ -159,6 +228,7 @@ struct MenuBarMenu: View {
       ))
 
     Button("Quit Chai") {
+      appState.sleepDisabler.disengage()
       NSApplication.shared.terminate(nil)
     }
     .keyboardShortcut("q")
