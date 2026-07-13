@@ -47,14 +47,25 @@ privileges, Chai first tries a passwordless `sudo -n`, then falls back to a macO
 prompt.
 
 > [!IMPORTANT]
-> If you use timed sessions with the lid closed, set up the passwordless sudoers rule below.
+> If you use timed sessions with the lid closed, set up the passwordless sudoers rule.
 > Without it, re-enabling sleep when the timer fires pops a password dialog — which nobody can
 > answer while the lid is shut, so the Mac stays awake until you open it and dismiss the prompt.
+
+Chai sets this up for you: when you start a timed session with lid-closed mode enabled and no
+rule is installed, it offers to create `/etc/sudoers.d/chai` (validated with `visudo` before
+install) after a single administrator prompt. The rule is scoped to exactly
+`pmset disablesleep 0` and `pmset disablesleep 1` for your user. When you turn the preference
+off, Chai offers to remove the rule again.
+
+Prefer to do it manually? Run:
 
 ```bash
 echo "$USER ALL=(root) NOPASSWD: /usr/bin/pmset disablesleep 0, /usr/bin/pmset disablesleep 1" \
   | sudo tee /etc/sudoers.d/chai
 ```
+
+To remove it later: `sudo rm /etc/sudoers.d/chai`. Note the file holds a single user's rule —
+on a multi-user Mac, the last user to install wins.
 
 ### Keep Awake on Battery
 

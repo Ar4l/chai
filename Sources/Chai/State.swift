@@ -26,6 +26,7 @@ final class AppState {
     static let loginItemEnabled = "LoginItemEnabled"
     static let lidClosedMode = "LidClosedMode"
     static let keepAwakeOnBattery = "KeepAwakeOnBattery"
+    static let suppressSudoersPrompt = "SuppressSudoersPrompt"
   }
 
   var isActive: Bool = false
@@ -35,9 +36,13 @@ final class AppState {
   var isLidClosedModeEnabled: Bool = false
   var isKeepAwakeOnBatteryEnabled: Bool = true
   var isSuspendedForBattery: Bool = false
+  var isSudoersPromptSuppressed: Bool = false
+  // In-memory latch: a declined sudoers offer only re-asks on the next launch.
+  var didOfferSudoersInstall: Bool = false
   var powerAssertion: PowerAssertion? = nil
   var deactivationTask: Task<Void, Never>? = nil
   let sleepDisabler = SleepDisabler()
+  let sudoersInstaller = SudoersInstaller()
 
   init() {
     isDisableAfterSuspendEnabled = UserDefaults.standard.bool(
@@ -46,6 +51,8 @@ final class AppState {
     isLidClosedModeEnabled = UserDefaults.standard.bool(forKey: DefaultsKey.lidClosedMode)
     isKeepAwakeOnBatteryEnabled =
       UserDefaults.standard.object(forKey: DefaultsKey.keepAwakeOnBattery) as? Bool ?? true
+    isSudoersPromptSuppressed = UserDefaults.standard.bool(
+      forKey: DefaultsKey.suppressSudoersPrompt)
   }
 
   func activate(spec: ActivationSpec?) {
@@ -77,5 +84,10 @@ final class AppState {
   func setKeepAwakeOnBattery(_ enabled: Bool) {
     UserDefaults.standard.set(enabled, forKey: DefaultsKey.keepAwakeOnBattery)
     isKeepAwakeOnBatteryEnabled = enabled
+  }
+
+  func setSuppressSudoersPrompt(_ suppressed: Bool) {
+    UserDefaults.standard.set(suppressed, forKey: DefaultsKey.suppressSudoersPrompt)
+    isSudoersPromptSuppressed = suppressed
   }
 }

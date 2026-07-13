@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.5.0 - 2026-07-13
+
+### Added
+
+- Chai can now install the passwordless sudoers rule needed for lid-closed timed sessions
+  itself, via a single administrator prompt. The offer appears when starting a timed session
+  with "Keep Awake When Lid Is Closed" enabled and no working rule; disabling the preference
+  offers to remove the rule again.
+
 ## 3.4.0 - 2026-07-10
 
 First release of the [Ar4l/chai](https://github.com/Ar4l/chai) fork. Includes upstream's

@@ -79,6 +79,8 @@ struct ChaiApp: App {
         os_log("Timer fired, deactivating")
         deactivate()
       }
+
+      offerSudoersInstallIfNeeded()
     }
 
     appState.activate(spec: spec)
@@ -126,8 +128,93 @@ struct ChaiApp: App {
   }
 
   private func toggleLidClosedMode() {
+    let turningOff = appState.isLidClosedModeEnabled
+
     appState.setLidClosedMode(!appState.isLidClosedModeEnabled)
     applyPowerPolicy()
+
+    if turningOff {
+      offerSudoersRemovalIfNeeded()
+    }
+  }
+
+  // A timed session expiring with the lid closed needs a passwordless
+  // `pmset disablesleep 0`: the admin-prompt fallback would appear on a screen
+  // nobody can see, keeping the Mac awake until the lid opens. Offer to
+  // install the sudoers rule once, before the session engages.
+  private func offerSudoersInstallIfNeeded() {
+    guard appState.isLidClosedModeEnabled,
+      !appState.isSudoersPromptSuppressed,
+      !appState.didOfferSudoersInstall
+    else { return }
+
+    guard SudoersInstaller.validatedUserName() != nil else {
+      os_log("User name unsuitable for a sudoers rule, skipping setup offer")
+      return
+    }
+
+    guard !appState.sudoersInstaller.hasRule() else { return }
+
+    appState.didOfferSudoersInstall = true
+
+    NSApp.activate(ignoringOtherApps: true)
+
+    let alert = NSAlert()
+    alert.messageText = "Allow Chai to Re-Enable Sleep Without a Password?"
+    alert.informativeText = """
+      When this timer ends with the lid closed, Chai must run \
+      "pmset disablesleep 0" as an administrator. Without a passwordless rule, \
+      macOS shows a password dialog on a screen nobody can see, and the Mac \
+      stays awake until the lid is opened. Installing adds /etc/sudoers.d/chai, \
+      scoped to exactly this command, after one administrator prompt.
+      """
+    alert.addButton(withTitle: "Install")
+    alert.addButton(withTitle: "Not Now")
+    alert.addButton(withTitle: "Don't Ask Again")
+
+    switch alert.runModal() {
+    case .alertFirstButtonReturn:
+      switch appState.sudoersInstaller.install() {
+      case .success:
+        if !appState.sudoersInstaller.hasRule() {
+          // e.g. /etc/sudoers is missing "#includedir /etc/sudoers.d"
+          showSudoersFailureAlert("The rule was installed but has no effect.")
+        }
+      case .cancelled:
+        break
+      case .failed(let message):
+        showSudoersFailureAlert(message)
+      }
+    case .alertThirdButtonReturn:
+      appState.setSuppressSudoersPrompt(true)
+    default:
+      break
+    }
+  }
+
+  private func offerSudoersRemovalIfNeeded() {
+    guard appState.sudoersInstaller.hasRule() else { return }
+
+    NSApp.activate(ignoringOtherApps: true)
+
+    let alert = NSAlert()
+    alert.messageText = "Remove Chai's Passwordless Sudo Rule?"
+    alert.informativeText =
+      "Lid-closed mode is off, so /etc/sudoers.d/chai is no longer needed."
+    alert.addButton(withTitle: "Keep")
+    alert.addButton(withTitle: "Remove")
+
+    if alert.runModal() == .alertSecondButtonReturn {
+      _ = appState.sudoersInstaller.remove()
+    }
+  }
+
+  private func showSudoersFailureAlert(_ message: String) {
+    let alert = NSAlert()
+    alert.messageText = "Could Not Install the Sudoers Rule"
+    alert.informativeText =
+      "\(message)\n\nYou can set it up manually with the command in Chai's README."
+    alert.runModal()
   }
 
   private func toggleKeepAwakeOnBattery() {
