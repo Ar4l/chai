@@ -21,6 +21,12 @@ brew install ar4l/tap/chai
 The cask removes the quarantine attribute on install, so Gatekeeper won't complain about the
 app not being notarized.
 
+> [!CAUTION]
+> Always use the fully-qualified name `ar4l/tap/chai` — including for upgrades
+> (`brew upgrade --cask ar4l/tap/chai`). The bare name `chai` resolves to the *deprecated
+> official cask* (upstream, 3.3.0, no lid-closed mode) and will silently replace this fork
+> with a downgrade.
+
 Or build from source (requires the Xcode command line tools):
 
 ```bash
